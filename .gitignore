@@ -5,6 +5,9 @@ __pycache__/
 
 # C extensions
 *.so
+/data
+/new-tensorflow-env
+/model_checkpoint
 
 # Distribution / packaging
 .Python
