@@ -1,0 +1,32 @@
+# Flask for the web application
+Flask==2.2.2
+
+# TensorFlow for building and training the model
+tensorflow==2.12.0
+
+# OpenCV for image processing
+opencv-python-headless==4.6.0.66
+
+# MediaPipe for hand detection
+mediapipe==0.10.14
+
+# gTTS for text-to-speech
+gTTS==2.2.3
+
+# NumPy for numerical computations (no strict version constraint)
+numpy
+
+# scikit-learn for evaluation metrics
+scikit-learn==1.0.2
+
+# Pillow for image loading
+Pillow==9.0.1
+
+# Simpleaudio for playing audio (optional, if you want to play the TTS output)
+
+
+# Gunicorn for deploying the Flask app (optional)
+gunicorn==20.1.0
+
+# Werkzeug for WSGI utilities
+Werkzeug==2.2.2

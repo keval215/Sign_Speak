@@ -1,0 +1,12 @@
+{
+    "python.defaultInterpreterPath": "${workspaceFolder}/new-tensorflow-env/Scripts/python.exe",
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/new-tensorflow-env/Lib/site-packages"
+    ],
+    "python.languageServer": "Pylance",
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": true,
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportMissingImports": "none"
+    }
+}
