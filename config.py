@@ -23,10 +23,10 @@ GRAYSCALE = False  # Use color images for better features
 
 # Guide Box Coordinates
 # For example, a 200x200 box at (220, 140) in a 640x480 frame
-GUIDE_BOX_X = 220
-GUIDE_BOX_Y = 140
-GUIDE_BOX_W = 200
-GUIDE_BOX_H = 200
+GUIDE_BOX_X = 170
+GUIDE_BOX_Y = 90 
+GUIDE_BOX_W = 300
+GUIDE_BOX_H = 300
 
 # Image Preprocessing
 IMAGE_WIDTH = 640

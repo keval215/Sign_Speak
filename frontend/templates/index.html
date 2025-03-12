@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Speak - Sign Language Recognition</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-hands"></i>
+                <h1>Sign<span>Speak</span></h1>
+            </div>
+            <p class="tagline">Bridging communication through sign language recognition</p>
+        </header>
+
+        <main>
+            <div class="camera-container">
+                <div id="video-wrapper">
+                    <video id="webcam" width="{{ image_width }}" height="{{ image_height }}" autoplay playsinline></video>
+<div id="guide-box" 
+    data-x="{{ guide_box_x }}"
+    data-y="{{ guide_box_y }}" 
+    data-width="{{ guide_box_w }}" 
+    data-height="{{ guide_box_h }}">
+</div>
+                    <div id="status-message">Place your hand inside the guide box and keep it steady</div>
+                </div>
+                
+                <div class="controls">
+                    <button id="capture-btn" class="btn primary">
+                        <i class="fas fa-camera"></i> Capture Sign
+                    </button>
+                    <button id="switch-camera" class="btn secondary">
+                        <i class="fas fa-sync-alt"></i> Switch Camera
+                    </button>
+                </div>
+            </div>
+
+            <div class="result-panel" style="display: none;">
+                <div class="result-header">
+                    <h2>Recognition Result</h2>
+                    <button id="close-result" class="btn icon-btn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="result-content">
+                    <div class="result-images">
+                        <div>
+                            <h3>Captured Image</h3>
+                            <img id="captured-image" alt="Captured hand sign">
+                        </div>
+                        <div id="processed-image-container">
+                            <h3>Processed Image</h3>
+                            <img id="processed-image" alt="Processed hand sign">
+                        </div>
+                    </div>
+                    
+                    <div class="prediction-result">
+                        <div class="prediction">
+                            <h2 id="predicted-letter">A</h2>
+                            <div class="confidence-bar-container">
+                                <div class="confidence-bar"></div>
+                                <span id="confidence-text">95% Confidence</span>
+                            </div>
+                        </div>
+                        
+                        <div class="detection-status success">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Hand successfully detected</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="result-actions">
+                    <button id="try-again" class="btn secondary">
+                        <i class="fas fa-redo"></i> Try Again
+                    </button>
+                </div>
+            </div>
+            
+            <div class="info-panel">
+                <h2>How to Use</h2>
+                <ol>
+                    <li>Position your hand in the green guide box</li>
+                    <li>Make a clear sign gesture with your hand</li>
+                    <li>Keep your hand steady and click "Capture Sign"</li>
+                    <li>Wait for the recognition result</li>
+                </ol>
+                
+                <div class="tips">
+                    <h3><i class="fas fa-lightbulb"></i> Tips</h3>
+                    <ul>
+                        <li>Ensure good lighting for better recognition</li>
+                        <li>Keep a neutral background if possible</li>
+                        <li>Hold your sign steady for better results</li>
+                    </ul>
+                </div>
+            </div>
+        </main>
+        
+        <footer>
+            <p>&copy; 2023 SignSpeak | <a href="https://github.com/keval215/Sign_Speak" target="_blank">GitHub <i class="fab fa-github"></i></a></p>
+        </footer>
+    </div>
+    
+    <div id="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+        <p>Processing your sign...</p>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
