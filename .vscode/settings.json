@@ -1,7 +1,7 @@
 {
-    "python.defaultInterpreterPath": "${workspaceFolder}/new-tensorflow-env/Scripts/python.exe",
+    "python.defaultInterpreterPath": "${workspaceFolder}/signspeak-new/Scripts/python.exe",
     "python.analysis.extraPaths": [
-        "${workspaceFolder}/new-tensorflow-env/Lib/site-packages"
+        "${workspaceFolder}/signspeak_new/Lib/site-packages"
     ],
     "python.languageServer": "Pylance",
     "python.linting.enabled": true,

@@ -99,14 +99,15 @@ function captureImage() {
 }
 
 // Process captured image (dummy implementation for frontend demo)
+// Process captured image with real prediction endpoint
 async function processCapturedImage(dataUrl) {
     // Show loading overlay
     loadingOverlay.style.display = 'flex';
+    statusMessage.textContent = 'Processing image...';
     
     try {
-        // In a real implementation, you would send the image to the server for processing
-        // For demo purposes, we'll use a dummy API call
-        const response = await fetch('/dummy_predict', {
+        // Send the image to the server for processing
+        const response = await fetch('/predict', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -122,24 +123,27 @@ async function processCapturedImage(dataUrl) {
         
         const result = await response.json();
         
-        // For demo, we'll just return some dummy data
+        // Return processed data
         return {
-            processedImageUrl: dataUrl, // In real app, this would be returned from backend
+            processedImageUrl: result.processed_image_url,
+            visualizationUrl: result.visualization_url,
+            annotatedImageUrl: result.annotated_image_url,
             predictedClass: result.predicted_class,
+            classLabel: result.class_label,
             confidence: result.confidence,
-            handDetected: result.hand_detected
+            handDetected: result.hand_detected,
+            error: result.error
         };
     } catch (error) {
         console.error('Error processing image:', error);
         return {
-            error: 'Failed to process image',
+            error: 'Failed to process image: ' + error.message,
             handDetected: false
         };
     } finally {
         // Hide loading overlay
-        setTimeout(() => {
-            loadingOverlay.style.display = 'none';
-        }, 1000); // Simulate processing delay
+        loadingOverlay.style.display = 'none';
+        statusMessage.textContent = 'Place your hand inside the guide box and keep it steady';
     }
 }
 
@@ -149,11 +153,29 @@ function updateResultPanel(data) {
         // Handle error case
         detectionStatus.className = 'detection-status error';
         detectionStatus.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${data.error}`;
+        
+        // If there's an input image despite the error, show it
+        if (data.processedImageUrl) {
+            capturedImage.src = data.processedImageUrl;
+        }
+        
+        // Clear other elements
+        processedImage.src = '';
+        predictedLetter.textContent = '?';
+        confidenceBar.style.width = '0%';
+        confidenceText.textContent = 'No prediction';
+        
+        // Show result panel even with error
+        resultPanel.style.display = 'block';
         return;
     }
     
-    // Display captured image
-    capturedImage.src = data.processedImageUrl;
+    // Display captured image (use annotated image if available)
+    if (data.annotatedImageUrl) {
+        capturedImage.src = data.annotatedImageUrl;
+    } else {
+        capturedImage.src = data.processedImageUrl || '';
+    }
     
     // If we have a processed image from the backend, show it
     if (data.processedImageUrl) {
@@ -168,14 +190,38 @@ function updateResultPanel(data) {
         detectionStatus.className = 'detection-status success';
         detectionStatus.innerHTML = '<i class="fas fa-check-circle"></i> Hand successfully detected';
         
-        // Convert class number to letter or number using CLASS_MAPPING
-        // For now, just use A as dummy data
-        predictedLetter.textContent = 'A';
+        // Use the class label from the server if available
+        if (data.classLabel) {
+            predictedLetter.textContent = data.classLabel;
+        } else {
+            // Fallback to the class index
+            predictedLetter.textContent = `Class ${data.predictedClass}`;
+        }
         
         // Update confidence bar
         const confidence = data.confidence * 100;
         confidenceBar.style.width = `${confidence}%`;
         confidenceText.textContent = `${confidence.toFixed(0)}% Confidence`;
+        
+        // If we have a visualization image, show it in a new container
+        if (data.visualizationUrl) {
+            // Check if visualization container exists, create it if not
+            let visContainer = document.getElementById('visualization-container');
+            if (!visContainer) {
+                visContainer = document.createElement('div');
+                visContainer.id = 'visualization-container';
+                visContainer.className = 'image-container';
+                visContainer.innerHTML = `
+                    <h3>Hand Detection Visualization</h3>
+                    <img id="visualization-image" alt="Visualization" class="result-image">
+                `;
+                document.querySelector('.result-images').appendChild(visContainer);
+            }
+            
+            // Set the visualization image
+            document.getElementById('visualization-image').src = data.visualizationUrl;
+            visContainer.style.display = 'block';
+        }
     } else {
         detectionStatus.className = 'detection-status warning';
         detectionStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> No hand detected, please try again';
@@ -196,14 +242,11 @@ captureBtn.addEventListener('click', async () => {
     try {
         const imageData = await captureImage();
         const result = await processCapturedImage(imageData);
-        updateResultPanel({
-            ...result,
-            processedImageUrl: imageData // In real app, this would come from backend
-        });
+        updateResultPanel(result);
     } catch (error) {
         console.error('Error during capture process:', error);
         updateResultPanel({
-            error: 'Failed to process image',
+            error: 'Failed to process image: ' + error.message,
             handDetected: false
         });
     } finally {
@@ -212,29 +255,34 @@ captureBtn.addEventListener('click', async () => {
     }
 });
 
-switchCameraBtn.addEventListener('click', () => {
-    switchCamera();
-});
+// Add a function to fetch class mapping from the server
+async function fetchClassMapping() {
+    try {
+        const response = await fetch('/get_class_mapping');
+        const mapping = await response.json();
+        
+        // Store mapping globally for later use
+        window.classMapping = mapping;
+        console.log('Class mapping loaded:', mapping);
+    } catch (error) {
+        console.error('Error fetching class mapping:', error);
+    }
+}
 
-closeResultBtn.addEventListener('click', () => {
-    resultPanel.style.display = 'none';
-});
-
-tryAgainBtn.addEventListener('click', () => {
-    resultPanel.style.display = 'none';
-});
-
-// Initialize the app
+// Initialize the app - update to include class mapping fetch
 document.addEventListener('DOMContentLoaded', async () => {
     // Fetch config first
     await fetchConfig();
     
+    // Fetch class mapping
+    await fetchClassMapping();
+    
     // Set guide box position from data attributes
     const guideBox = document.getElementById('guide-box');
-    const x = guideBox.getAttribute('data-x');
-    const y = guideBox.getAttribute('data-y');
-    const width = guideBox.getAttribute('data-width');
-    const height = guideBox.getAttribute('data-height');
+    const x = guideBox.getAttribute('data-x') || configData.guide_box_x || 100;
+    const y = guideBox.getAttribute('data-y') || configData.guide_box_y || 100;
+    const width = guideBox.getAttribute('data-width') || configData.guide_box_w || 300;
+    const height = guideBox.getAttribute('data-height') || configData.guide_box_h || 300;
     
     guideBox.style.left = `${x}px`;
     guideBox.style.top = `${y}px`;
@@ -249,18 +297,5 @@ document.addEventListener('DOMContentLoaded', async () => {
         statusMessage.textContent = 'Camera access not supported in your browser';
         captureBtn.disabled = true;
         return;
-    }
-});
-
-// Window resize handler to adjust guide box positioning if needed
-window.addEventListener('resize', () => {
-    // You might need to adjust guide box position on window resize
-    // This depends on your layout requirements
-});
-
-// Clean up on page unload
-window.addEventListener('beforeunload', () => {
-    if (stream) {
-        stream.getTracks().forEach(track => track.stop());
     }
 });
