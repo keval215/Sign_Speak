@@ -147,7 +147,12 @@ async function processCapturedImage(dataUrl) {
     }
 }
 
-// Update the result panel with prediction results
+// Function to scroll to the result panel
+function scrollToResultPanel() {
+    resultPanel.scrollIntoView({ behavior: 'smooth' });
+}
+
+// Call scrollToResultPanel when the result panel is updated
 function updateResultPanel(data) {
     if (data.error) {
         // Handle error case
@@ -167,6 +172,7 @@ function updateResultPanel(data) {
         
         // Show result panel even with error
         resultPanel.style.display = 'block';
+        scrollToResultPanel();  // Scroll to the result panel
         return;
     }
     
@@ -205,13 +211,12 @@ function updateResultPanel(data) {
         
         // If we have a visualization image, show it in a new container
         if (data.visualizationUrl) {
-            // Check if visualization container exists, create it if not
             let visContainer = document.getElementById('visualization-container');
             if (!visContainer) {
                 visContainer = document.createElement('div');
                 visContainer.id = 'visualization-container';
                 visContainer.className = 'image-container';
-                visContainer.innerHTML = `
+                visContainer.innerHTML = `  
                     <h3>Hand Detection Visualization</h3>
                     <img id="visualization-image" alt="Visualization" class="result-image">
                 `;
@@ -232,7 +237,9 @@ function updateResultPanel(data) {
     
     // Show result panel
     resultPanel.style.display = 'block';
+    scrollToResultPanel();  // Scroll to the result panel
 }
+
 
 // Event Handlers
 captureBtn.addEventListener('click', async () => {
@@ -298,4 +305,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         captureBtn.disabled = true;
         return;
     }
-});
+
+}
+
+);
+
+// Function to generate random matrix text
+function generateRandomMatrixText() {
+    const characters = '01ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'; // You can add more characters
+    let randomText = '';
+    for (let i = 0; i < 50; i++) { // Adjust the length of each line for randomness
+        randomText += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return randomText;
+}
+
+// Dynamically add the random text to the background
+const matrixBackground = document.querySelector('body::before');
+matrixBackground.textContent = generateRandomMatrixText();
+

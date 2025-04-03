@@ -13,7 +13,7 @@ from config import (
     GUIDE_BOX_W, GUIDE_BOX_H, CLASS_MAPPING, IMAGE_SIZE,
     MODEL_CHECKPOINT_DIR, FINAL_MODEL_PATH
 )
-
+from utils import HandDetector, preprocess_image
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 
