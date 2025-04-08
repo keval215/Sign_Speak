@@ -10,7 +10,7 @@ __pycache__/
 /data
 /new-tensorflow-env
 /model_checkpoint
-
+/temp_images
 # Distribution / packaging
 .Python
 build/

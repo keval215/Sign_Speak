@@ -5,7 +5,7 @@
   --primary-light: #A5D6A7;
   --accent-color: #FF9800;
   --text-color: #212121;
-  --text-secondary: #757575;
+  --text-secondary: #f9e9bf;
   --background-color: #8e3df8;
   --card-color: #ffffff;
   --border-radius: 8px;
@@ -78,39 +78,32 @@
 }
 
 /* Positions for letters */
-.letter-a { top: 8%; left: 15%; animation-delay: 0s; }
+.letter-a { top: 5%; left: 15%; animation-delay: 0s; }
 .letter-b { top: 70%; left: 85%; animation-delay: 1s; }
 .letter-c { top: 40%; left: 25%; animation-delay: 2s; }
-.letter-d { top: 35%; left: 75%; animation-delay: 3s; }
+.letter-d { top: 8%; left: 10%; animation-delay: 3s; }
 .letter-e { top: 65%; left: 35%; animation-delay: 4s; }
 .letter-s { top: 20%; left: 60%; animation-delay: 5s; }
 .letter-l { top: 55%; left: 20%; animation-delay: 6s; }
-
-/* Positions for numbers */
-.number-1 { top: 15%; left: 45%; animation-delay: 1s; }
-.number-2 { top: 75%; left: 65%; animation-delay: 3s; }
-.number-3 { top: 45%; left: 5%; animation-delay: 5s; }
-.number-5 { top: 25%; left: 75%; animation-delay: 7s; }
-.number-9 { top: 60%; left: 90%; animation-delay: 9s; }
-
-
-
-/* Additional positions for more letters */
 .letter-f { top: 12%; left: 38%; animation-delay: 7s; }
-.letter-h { top: 28%; left: 88%; animation-delay: 8s; }
+.letter-h { top: 28%; left: 78%; animation-delay: 8s; }
 .letter-i { top: 82%; left: 22%; animation-delay: 9s; }
 .letter-k { top: 50%; left: 40%; animation-delay: 10s; }
-.letter-m { top: 15%; left: 72%; animation-delay: 11s; }
+.letter-m { top: 13%; left: 72%; animation-delay: 11s; }
 
-/* Additional positions for more numbers */
-.number-4 { top: 33%; left: 12%; animation-delay: 2s; }
-.number-6 { top: 68%; left: 52%; animation-delay: 4s; }
+
+/* Positions for numbers */
+
+.number-1 { top: 15%; left: 45%; animation-delay: 1s; }
+.number-2 { top: 75%; left: 65%; animation-delay: 3s; }
+.number-3 { top: 70%; left: 5%; animation-delay: 5s; }
+.number-5 { top: 25%; left: 9%; animation-delay: 7s; }
+.number-9 { top: 60%; left: 90%; animation-delay: 9s; }
+.number-4 { top: 48%; left: 7%; animation-delay: 2s; }
+.number-6 { top: 68%; left: 62%; animation-delay: 4s; }
 .number-7 { top: 22%; left: 93%; animation-delay: 6s; }
 .number-8 { top: 78%; left: 36%; animation-delay: 8s; }
 .number-0 { top: 42%; left: 85%; animation-delay: 10s; }
-
-/* Additional CSS-based sign language shapes */
-/* Sign for 'F' hand shape */
 
 
 
@@ -230,7 +223,7 @@ main {
   box-sizing: border-box;
   pointer-events: none;
   /* Increase the size of the guide box */
-  left: 170px;
+  left: 140px;
   top: 90px;
   width: 300px;
   height: 300px;
@@ -265,61 +258,42 @@ body {
   height: 100%;
 }
 
-/* Make the result panel scrollable if its content exceeds its height */
 .result-panel {
-  background-color: rgba(255, 255, 255, 0.85); /* Slightly more opaque for readability */
+  background-color: rgba(255, 255, 255, 0.7); /* Slightly more opaque for readability */
   border-radius: var(--border-radius);
   box-shadow: var(--shadow);
   padding: 20px;
   position: relative;
   margin-bottom: 20px;
-  max-height: 400px;
+  max-height: 450px;
   overflow-y: auto;
 }
 
-
-
-/* Optional: Style the scrollbar */
-.result-panel::-webkit-scrollbar {
-  width: 8px;
-}
-
-.result-panel::-webkit-scrollbar-thumb {
-  background-color: darkgrey;
-  border-radius: 10px;
-}
-
-.result-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #150606;
-}
-
 .result-images {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  justify-content: center; /* Horizontally center the image */
+  align-items: center; /* Vertically center the image */
   gap: 20px;
   margin-bottom: 20px;
+  width: 100%;  /* Full width for proper alignment */
 }
 
-.result-images h3 {
-  font-size: 1rem;
-  margin-bottom: 10px;
-  color: var(--text-secondary);
+#processed-image-container {
+  display: flex;
+  justify-content: center;  /* Horizontally center the image */
+  align-items: center;      /* Vertically center the image */
+  width: auto;  /* Prevent it from taking full width */
+  height: auto;  /* Prevent height from stretching */
+  padding: 0;
+  box-sizing: border-box;
 }
 
-.result-images img {
-  max-width: 100%;
+#processed-image {
+  max-width: 80%;  /* Set the image width to 80% of the container */
+  max-height: 300px; /* Limit the height to 300px for better fitting */
+  object-fit: contain;  /* Maintain aspect ratio */
   border-radius: var(--border-radius);
-  border: 1px solid #eeeeee;
-}
-
-.prediction-result {
-  border-top: 1px solid #eeeeee;
-  padding-top: 20px;
+  border: 1px solid #eeeeee;  /* Add a light border */
 }
 
 .prediction {
@@ -353,7 +327,7 @@ body {
 
 #confidence-text {
   font-size: 0.9rem;
-  color: var(--text-secondary);
+  color: #000000;
 }
 
 .detection-status {
@@ -368,7 +342,7 @@ body {
 }
 
 .detection-status.success {
-  background-color: rgba(76, 175, 80, 0.1);
+  background-color: rgba(54, 54, 54, 0.6);
   color: var(--primary-color);
 }
 

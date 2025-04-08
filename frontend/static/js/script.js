@@ -159,12 +159,7 @@ function updateResultPanel(data) {
         detectionStatus.className = 'detection-status error';
         detectionStatus.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${data.error}`;
         
-        // If there's an input image despite the error, show it
-        if (data.processedImageUrl) {
-            capturedImage.src = data.processedImageUrl;
-        }
-        
-        // Clear other elements
+        // Clear processed image if error
         processedImage.src = '';
         predictedLetter.textContent = '?';
         confidenceBar.style.width = '0%';
@@ -176,14 +171,7 @@ function updateResultPanel(data) {
         return;
     }
     
-    // Display captured image (use annotated image if available)
-    if (data.annotatedImageUrl) {
-        capturedImage.src = data.annotatedImageUrl;
-    } else {
-        capturedImage.src = data.processedImageUrl || '';
-    }
-    
-    // If we have a processed image from the backend, show it
+    // Only show processed image
     if (data.processedImageUrl) {
         processedImage.src = data.processedImageUrl;
         document.getElementById('processed-image-container').style.display = 'block';

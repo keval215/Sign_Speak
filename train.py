@@ -213,4 +213,4 @@ if __name__ == "__main__":
         load_all_data=args.all_data,
         sequence_length=args.sequence_length,
         epochs=args.epochs
-    )
+    )   

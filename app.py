@@ -55,7 +55,7 @@ def save_image(image, prefix="img"):
         return None
 
 def detect_and_crop_hand(image_data):
-    """Detect and crop the hand from the image."""
+    """Detect and crop the hand from the image using MediaPipe."""
     try:
         # Convert to numpy array from base64
         if isinstance(image_data, str) and image_data.startswith('data:image'):
@@ -65,31 +65,31 @@ def detect_and_crop_hand(image_data):
             nparr = np.frombuffer(image_data, np.uint8)
         
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        blur = cv2.GaussianBlur(gray, (5, 5), 0)
-        _, thresh = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
         
-        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        # Initialize hand detector
+        detector = HandDetector(
+            static_image_mode=True,
+            max_num_hands=1,
+            min_detection_confidence=0.5
+        )
         
-        if not contours:
+        # Extract hand region
+        hand_roi, bbox, hand_detected = detector.extract_hand_roi(
+            img,
+            padding=30,
+            target_size=IMAGE_SIZE
+        )
+        
+        if hand_detected and hand_roi is not None:
+            # Create visualization with bounding box
+            vis_img = img.copy()
+            if bbox:
+                x, y, w, h = bbox
+                cv2.rectangle(vis_img, (x, y), (x+w, y+h), (0, 255, 0), 2)
+            
+            return True, vis_img, hand_roi
+        else:
             return False, img, None
-        
-        max_contour = max(contours, key=cv2.contourArea)
-        x, y, w, h = cv2.boundingRect(max_contour)
-        
-        padding = 20
-        x = max(0, x - padding)
-        y = max(0, y - padding)
-        w = min(img.shape[1] - x, w + 2*padding)
-        h = min(img.shape[0] - y, h + 2*padding)
-        
-        hand_crop = img[y:y+h, x:x+w]
-        
-        # We draw a bounding box for reference, but no side-by-side comparison
-        vis_img = img.copy()
-        cv2.rectangle(vis_img, (x, y), (x+w, y+h), (0, 255, 0), 2)
-        
-        return True, vis_img, hand_crop
     
     except Exception as e:
         app.logger.error(f"Error in hand detection: {e}")
@@ -97,14 +97,37 @@ def detect_and_crop_hand(image_data):
             return False, img, None
         return False, None, None
 
-def preprocess_image(image, target_size=IMAGE_SIZE):
-    """Preprocess image for model input."""
+def preprocess_image(image, target_size=IMAGE_SIZE, grayscale=False, normalize=True, add_dimensions=True):
+    
     try:
+        if image is None:
+            app.logger.error("Cannot preprocess None image")
+            return None
+            
+        # Resize to target size
         img = cv2.resize(image, target_size)
-        img = img.astype(np.float32) / 255.0
-        # Add batch and sequence dimensions
-        img = np.expand_dims(np.expand_dims(img, axis=0), axis=0)
+        
+        # Convert to grayscale if requested
+        if grayscale:
+            if len(img.shape) > 2 and img.shape[2] == 3:
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                # Add channel dimension back for model consistency
+                img = np.expand_dims(img, axis=-1)
+        
+        # Normalize pixel values if requested
+        if normalize:
+            img = img.astype(np.float32) / 255.0
+        
+        # Add batch and sequence dimensions if requested (for model input)
+        if add_dimensions:
+            # First ensure we have a channel dimension
+            if len(img.shape) == 2:  # If grayscale without channel dim
+                img = np.expand_dims(img, axis=-1)
+            # Then add batch and sequence dimensions
+            img = np.expand_dims(np.expand_dims(img, axis=0), axis=0)
+        
         return img
+        
     except Exception as e:
         app.logger.error(f"Error preprocessing image: {e}")
         return None
@@ -175,7 +198,7 @@ def predict():
                 
                 app.logger.info(f"Prediction: class={predicted_class}, confidence={confidence:.4f}")
                 
-                # Map class index to label
+                # Map class index to class label (from CLASS_MAPPING)
                 class_label = None
                 for label, idx in CLASS_MAPPING.items():
                     if idx == predicted_class:
@@ -204,7 +227,7 @@ def predict():
         return jsonify({
             'error': f"Prediction error: {str(e)}"
         }), 500
-
+    
 @app.route('/static/temp_images/<filename>')
 def serve_temp_image(filename):
     """Serve images from the temp directory."""

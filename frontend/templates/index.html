@@ -8,41 +8,37 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
- 
-      
-      <div class="floating-text">
-        <!-- Alphabets -->
-        <div class="alphabet letter-a">A</div>
-        <div class="alphabet letter-b">B</div>
-        <div class="alphabet letter-c">C</div>
-        <div class="alphabet letter-d">D</div>
-        <div class="alphabet letter-e">E</div>
-        <div class="alphabet letter-s">S</div>
-        <div class="alphabet letter-l">L</div>
-        
-        <!-- Numbers -->
-        <div class="number number-1">1</div>
-        <div class="number number-2">2</div>
-        <div class="number number-3">3</div>
-        <div class="number number-5">5</div>
-        <div class="number number-9">9</div>
-      </div>
-      
-      <div class="alphabet letter-f">F</div>
-      <div class="alphabet letter-h">H</div>
-      <div class="alphabet letter-i">I</div>
-      <div class="alphabet letter-k">K</div>
-      <div class="alphabet letter-m">M</div>
-      
-      <!-- Additional numbers -->
-      <div class="number number-4">4</div>
-      <div class="number number-6">6</div>
-      <div class="number number-7">7</div>
-      <div class="number number-8">8</div>
-      <div class="number number-0">0</div>
-      
-      
-
+  <div class="floating-text">
+    <!-- Alphabets -->
+    <div class="alphabet letter-a">A</div>
+    <div class="alphabet letter-b">B</div>
+    <div class="alphabet letter-c">C</div>
+    <div class="alphabet letter-d">D</div>
+    <div class="alphabet letter-e">E</div>
+    <div class="alphabet letter-s">S</div>
+    <div class="alphabet letter-l">L</div>
+    
+    <!-- Numbers -->
+    <div class="number number-1">1</div>
+    <div class="number number-2">2</div>
+    <div class="number number-3">3</div>
+    <div class="number number-5">5</div>
+    <div class="number number-9">9</div>
+  </div>
+  
+  <div class="alphabet letter-f">F</div>
+  <div class="alphabet letter-h">H</div>
+  <div class="alphabet letter-i">I</div>
+  <div class="alphabet letter-k">K</div>
+  <div class="alphabet letter-m">M</div>
+  
+  <!-- Additional numbers -->
+  <div class="number number-4">4</div>
+  <div class="number number-6">6</div>
+  <div class="number number-7">7</div>
+  <div class="number number-8">8</div>
+  <div class="number number-0">0</div>
+  
   <div class="container">
     <header>
       <div class="logo">
@@ -53,7 +49,6 @@
     </header>
 
     <main>
-        
       <div class="camera-container">
         <div id="video-wrapper">
           <video id="webcam" width="{{ image_width }}" height="{{ image_height }}" autoplay playsinline></video>
@@ -86,10 +81,7 @@
         
         <div class="result-content">
           <div class="result-images">
-            <div>
-              <h3>Captured Image</h3>
-              <img id="captured-image" alt="Captured hand sign">
-            </div>
+            <!-- Processed Image Display Only -->
             <div id="processed-image-container">
               <h3>Processed Image</h3>
               <img id="processed-image" alt="Processed hand sign">

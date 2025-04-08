@@ -48,13 +48,14 @@ SEQUENCE_LENGTH = 1  # For single images (not video)
 
 # Map class indices to labels
 # 0-9: Digits, 10-35: Letters A-Z
+# Map class indices to labels
 CLASS_MAPPING = {}
 # Add digits 0-9
 for i in range(10):
-    CLASS_MAPPING[i] = str(i)
+    CLASS_MAPPING[str(i)] = i  # Use string keys for digits
+
 # Add letters A-Z (ASCII 65-90)
 for i in range(26):
-    CLASS_MAPPING[i + 10] = chr(i + 65)
+    CLASS_MAPPING[chr(i + 65)] = i + 10  # Letters A-Z start from index 10
 
-# Reverse mapping (label to index)
 LABEL_MAPPING = {v: k for k, v in CLASS_MAPPING.items()}
