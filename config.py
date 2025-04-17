@@ -11,7 +11,7 @@ KAGGLE_DATASET_DIR = os.path.join(DATA_DIR, 'kaggle_dataset')
 
 # Model checkpoint path
 MODEL_CHECKPOINT_DIR = os.path.join(BASE_DIR, 'model_checkpoint')
-FINAL_MODEL_PATH = os.path.join(MODEL_CHECKPOINT_DIR, 'final_model.h5')
+FINAL_MODEL_PATH = os.path.join(MODEL_CHECKPOINT_DIR, 'very_lightweight_model.h5')
 
 # Create directories if they don't exist
 os.makedirs(CUSTOM_PROCESSED_DIR, exist_ok=True)

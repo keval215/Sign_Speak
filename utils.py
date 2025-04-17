@@ -219,20 +219,28 @@ class HandDetector:
             )
         
         return img_copy
-
-def preprocess_image(img, target_size=(128, 128), normalize=True, grayscale=False):
+def preprocess_image(img, target_size=(128, 128), normalize=True, grayscale=False, add_dimensions=True):
     """Preprocess image for model input"""
+    
+    # Resize the image to target size
     if img.shape[:2] != target_size:
         img = cv2.resize(img, target_size)
     
+    # Convert to grayscale if required
     if grayscale and len(img.shape) == 3:
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        img = np.expand_dims(img, axis=-1)
+        img = np.expand_dims(img, axis=-1)  # Add the channel dimension
     
+    # Normalize pixel values to [0, 1]
     if normalize:
         img = img.astype(np.float32) / 255.0
-        
+    
+    # Add batch dimension (i.e., (1, height, width, channels))
+    if add_dimensions:
+        img = np.expand_dims(img, axis=0)
+    
     return img
+
 
 def text_to_speech(text):
     """Convert text to speech audio data"""

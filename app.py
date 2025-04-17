@@ -192,7 +192,7 @@ def predict():
         if model is not None and cropped_hand is not None:
             processed_img = preprocess_image(cropped_hand)
             if processed_img is not None:
-                predictions = model.predict(processed_img)
+                predictions = model.predict(processed_img)  # processed_img should match model input shape
                 predicted_class = np.argmax(predictions[0])
                 confidence = float(predictions[0][predicted_class])
                 
@@ -227,6 +227,7 @@ def predict():
         return jsonify({
             'error': f"Prediction error: {str(e)}"
         }), 500
+
     
 @app.route('/static/temp_images/<filename>')
 def serve_temp_image(filename):

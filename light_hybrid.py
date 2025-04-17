@@ -3,32 +3,137 @@ import argparse
 import numpy as np
 from tensorflow.keras.utils import to_categorical
 import tensorflow as tf
-
-# Import the patched model
-from model_patch import PatchedASLModel
-from dataloader import create_data_generators, load_data_from_directory
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Dense, Input, GRU, Dropout, TimeDistributed, Flatten, Conv2D, MaxPooling2D, BatchNormalization
+from tensorflow.keras.optimizers import Adam
+from utils import preprocess_image
+from dataloader import create_data_generators
 from config import (
-    CUSTOM_PROCESSED_DIR, 
-    KAGGLE_DATASET_DIR, 
+    CUSTOM_PROCESSED_DIR,
+    KAGGLE_DATASET_DIR,
     MODEL_CHECKPOINT_DIR,
-    NUM_CLASSES, 
-    EPOCHS, 
-    BATCH_SIZE, 
+    NUM_CLASSES,
+    EPOCHS,
+    BATCH_SIZE,
     LEARNING_RATE,
     IMAGE_SIZE,
     CLASS_MAPPING,
     FINAL_MODEL_PATH
 )
 
-def reshape_data_for_lstm(X, sequence_length=1):
-    """Reshape input data for LSTM model"""
-    if sequence_length == 1:
-        return np.expand_dims(X, axis=1)
-    else:
-        return np.expand_dims(X, axis=1)
+# Optional: If you want to combine data from both datasets into a single
+# generator, you can use a CombinedGenerator approach.
+from tensorflow.keras.utils import Sequence
 
-def train_lightweight_hybrid(epochs=EPOCHS, train_kaggle=True, train_custom=True, load_all_data=True, sequence_length=1):
-    """Train the patched lightweight hybrid model"""
+class CombinedGenerator(Sequence):
+    """
+    Merges two Keras generators into one, effectively concatenating them
+    for the training loop. Inherits from tf.keras.utils.Sequence to be
+    compatible with Keras' model.fit() method.
+    """
+    def __init__(self, gen_a, gen_b):
+        self.gen_a = gen_a
+        self.gen_b = gen_b
+        self.len_a = len(gen_a)
+        self.len_b = len(gen_b)
+        self.n = self.len_a + self.len_b  # Total steps
+        self.batch_size = gen_a.batch_size  # Assuming same batch size for both generators
+    
+    def __len__(self):
+        return self.n
+    
+    def __getitem__(self, index):
+        # This logic will alternate between batches from gen_a and gen_b
+        if index < self.len_a:
+            return self.gen_a[index]
+        else:
+            return self.gen_b[index - self.len_a]
+    
+    def on_epoch_end(self):
+        # This ensures that each generator starts a new epoch
+        self.gen_a.on_epoch_end()
+        self.gen_b.on_epoch_end()
+
+class PatchedASLModel:
+    def __init__(self, num_classes, input_shape, learning_rate):
+        self.num_classes = num_classes
+        self.input_shape = input_shape
+        self.learning_rate = learning_rate
+        self.model = None
+
+    def build_lightweight_hybrid_model(self, sequence_length=1):
+        """Patched version of the lightweight hybrid model that ensures output compatibility"""
+        print(f"Building patched lightweight_hybrid model with sequence_length={sequence_length}")
+        print(f"Using num_classes={self.num_classes}")
+        
+        # Adjust input shape for sequence models
+        if sequence_length == 1:
+            # If sequence_length is 1, no need for sequence dimension (single image)
+            sequence_input_shape = (*self.input_shape,)  # For single image classification
+        else:
+            # If sequence_length > 1, we need the sequence dimension
+            sequence_input_shape = (sequence_length, *self.input_shape)
+        
+        # Define input
+        inputs = Input(shape=sequence_input_shape)
+        
+        # If sequence_length > 1, use TimeDistributed to apply Conv2D to each frame in the sequence
+        if sequence_length > 1:
+            x = TimeDistributed(Conv2D(32, (3, 3), activation='relu', padding='same'))(inputs)
+            x = TimeDistributed(BatchNormalization())(x)
+            x = TimeDistributed(MaxPooling2D((2, 2)))(x)
+            
+            x = TimeDistributed(Conv2D(64, (3, 3), activation='relu', padding='same'))(x)
+            x = TimeDistributed(BatchNormalization())(x)
+            x = TimeDistributed(MaxPooling2D((2, 2)))(x)
+            
+            # Flatten spatial dimensions
+            x = TimeDistributed(Flatten())(x)
+        else:
+            # For single image classification (no sequence), use Conv2D directly
+            x = Conv2D(32, (3, 3), activation='relu', padding='same')(inputs)
+            x = BatchNormalization()(x)
+            x = MaxPooling2D((2, 2))(x)
+            
+            x = Conv2D(64, (3, 3), activation='relu', padding='same')(x)
+            x = BatchNormalization()(x)
+            x = MaxPooling2D((2, 2))(x)
+            
+            # Flatten spatial dimensions
+            x = Flatten()(x)
+        
+        # RNN layer (if using sequence, otherwise skip for single image)
+        if sequence_length > 1:
+            x = GRU(64, return_sequences=True)(x)
+            x = Dropout(0.3)(x)
+        
+        # Output layer - ensuring we use the correct number of classes
+        outputs = Dense(self.num_classes, activation='softmax', name='output_layer')(x)
+        
+        # Create model
+        model = Model(inputs=inputs, outputs=outputs)
+        
+        # Print the model output shape for verification
+        print(f"Model output shape: {model.output_shape}")
+        
+        # Compile model with explicit from_logits=False
+        optimizer = Adam(learning_rate=self.learning_rate)
+        model.compile(
+            optimizer=optimizer,
+            loss='categorical_crossentropy',
+            metrics=['accuracy']
+        )
+        
+        # Store the model
+        self.model = model
+        return model
+
+
+def train_lightweight_hybrid(epochs=EPOCHS, train_kaggle=True, train_custom=True, load_all_data=True):
+    """
+    Train a patched lightweight hybrid model on both custom_processed and kaggle_dataset.
+    This script uses ImageDataGenerators to avoid loading everything into memory at once.
+    """
     print("Starting training with patched lightweight hybrid model")
     print(f"Training on Kaggle dataset: {train_kaggle}")
     print(f"Training on Custom dataset: {train_custom}")
@@ -40,8 +145,9 @@ def train_lightweight_hybrid(epochs=EPOCHS, train_kaggle=True, train_custom=True
         learning_rate=LEARNING_RATE
     )
     
-    # Build the patched lightweight hybrid model
-    model = asl_model.build_lightweight_hybrid_model(sequence_length)
+    # Build the patched lightweight hybrid model (single-image classification = seq_length=1)
+    # If you want sequence data, adjust the sequence_length here.
+    model = asl_model.build_lightweight_hybrid_model(sequence_length=1)
     
     # Print model summary
     model.summary()
@@ -53,115 +159,82 @@ def train_lightweight_hybrid(epochs=EPOCHS, train_kaggle=True, train_custom=True
     # Get callbacks
     callbacks = asl_model.get_callbacks(checkpoint_path)
     
-    # Load all data into memory
-    if load_all_data:
-        # Load and combine datasets
-        X_all = []
-        y_all = []
-        
-        if train_custom and os.path.exists(CUSTOM_PROCESSED_DIR):
-            print("Loading custom dataset...")
-            X_custom_train, y_custom_train, X_custom_val, y_custom_val = load_data_from_directory(CUSTOM_PROCESSED_DIR)
-            
-            # Print shapes for debugging
-            print(f"Custom train X shape: {X_custom_train.shape}, y shape: {y_custom_train.shape}")
-            print(f"Custom val X shape: {X_custom_val.shape}, y shape: {y_custom_val.shape}")
-            
-            # Check if labels are already one-hot encoded
-            if len(y_custom_train.shape) > 1:
-                print("Custom train data is already one-hot encoded")
-                if y_custom_train.shape[1] != NUM_CLASSES:
-                    print(f"WARNING: Custom train data has {y_custom_train.shape[1]} classes, but model expects {NUM_CLASSES}")
-                    # Convert back to indices
-                    y_custom_train_indices = np.argmax(y_custom_train, axis=1)
-                    y_custom_train = to_categorical(y_custom_train_indices, num_classes=NUM_CLASSES)
-                    
-                    y_custom_val_indices = np.argmax(y_custom_val, axis=1)
-                    y_custom_val = to_categorical(y_custom_val_indices, num_classes=NUM_CLASSES)
-            else:
-                # Convert to one-hot with the right number of classes
-                y_custom_train = to_categorical(y_custom_train, num_classes=NUM_CLASSES)
-                y_custom_val = to_categorical(y_custom_val, num_classes=NUM_CLASSES)
-            
-            X_all.extend([X_custom_train, X_custom_val])
-            y_all.extend([y_custom_train, y_custom_val])
-            
-        if train_kaggle and os.path.exists(KAGGLE_DATASET_DIR):
-            print("Loading Kaggle dataset...")
-            X_kaggle_train, y_kaggle_train, X_kaggle_val, y_kaggle_val = load_data_from_directory(KAGGLE_DATASET_DIR)
-            
-            # Print shapes for debugging
-            print(f"Kaggle train X shape: {X_kaggle_train.shape}, y shape: {y_kaggle_train.shape}")
-            print(f"Kaggle val X shape: {X_kaggle_val.shape}, y shape: {y_kaggle_val.shape}")
-            
-            # Check if labels are already one-hot encoded
-            if len(y_kaggle_train.shape) > 1:
-                print("Kaggle train data is already one-hot encoded")
-                if y_kaggle_train.shape[1] != NUM_CLASSES:
-                    print(f"WARNING: Kaggle train data has {y_kaggle_train.shape[1]} classes, but model expects {NUM_CLASSES}")
-                    # Convert back to indices
-                    y_kaggle_train_indices = np.argmax(y_kaggle_train, axis=1)
-                    y_kaggle_train = to_categorical(y_kaggle_train_indices, num_classes=NUM_CLASSES)
-                    
-                    y_kaggle_val_indices = np.argmax(y_kaggle_val, axis=1)
-                    y_kaggle_val = to_categorical(y_kaggle_val_indices, num_classes=NUM_CLASSES)
-            else:
-                # Convert to one-hot with the right number of classes
-                y_kaggle_train = to_categorical(y_kaggle_train, num_classes=NUM_CLASSES)
-                y_kaggle_val = to_categorical(y_kaggle_val, num_classes=NUM_CLASSES)
-            
-            X_all.extend([X_kaggle_train, X_kaggle_val])
-            y_all.extend([y_kaggle_train, y_kaggle_val])
-        
-        # Combine datasets
-        X_train = np.concatenate([x for x in X_all if x.size > 0])
-        y_train = np.concatenate([y for y in y_all if y.size > 0])
-        
-        # Print combined shapes for debugging
-        print(f"Combined X_train shape: {X_train.shape}")
-        print(f"Combined y_train shape: {y_train.shape}")
-        
-        # Double-check label dimensions
-        if y_train.shape[1] != NUM_CLASSES:
-            print(f"ERROR: Final y_train has {y_train.shape[1]} classes, but model expects {NUM_CLASSES}")
-            # Fix the shape
-            y_train_indices = np.argmax(y_train, axis=1)
-            y_train = to_categorical(y_train_indices, num_classes=NUM_CLASSES)
-            print(f"Fixed y_train shape: {y_train.shape}")
-            
-        # Reshape data for LSTM (add sequence dimension)
-        X_train_lstm = reshape_data_for_lstm(X_train, sequence_length)
-        print(f"X_train_lstm shape: {X_train_lstm.shape}")
-        
-        # Train the model
-        model.fit(
-            X_train_lstm, 
-            y_train,
-            batch_size=BATCH_SIZE,
-            epochs=epochs,
-            validation_split=0.2,
-            callbacks=callbacks,
-            verbose=1
-        )
-        
-        # Save final model
-        final_path = os.path.join(MODEL_CHECKPOINT_DIR, "final_patched_lightweight_hybrid.h5")
-        asl_model.save_model(final_path)
-        print(f"Training complete. Final model saved to {final_path}")
-    else:
+    # Only proceed if load_all_data is True (we interpret this to mean: "train now")
+    if not load_all_data:
         print("Use --all-data flag for this patched model")
+        return model
+
+    # Create empty references for custom and kaggle generators
+    custom_train_gen = None
+    custom_val_gen = None
+    kaggle_train_gen = None
+    kaggle_val_gen = None
+
+    # If custom dataset is requested and folder exists, load its generator
+    if train_custom and os.path.exists(CUSTOM_PROCESSED_DIR):
+        print("Creating generators for custom_processed dataset...")
+        custom_train_gen, custom_val_gen = create_data_generators(
+            CUSTOM_PROCESSED_DIR,
+            batch_size=BATCH_SIZE,
+            img_size=IMAGE_SIZE
+        )
+
+    # If kaggle dataset is requested and folder exists, load its generator
+    if train_kaggle and os.path.exists(KAGGLE_DATASET_DIR):
+        print("Creating generators for kaggle_dataset...")
+        kaggle_train_gen, kaggle_val_gen = create_data_generators(
+            KAGGLE_DATASET_DIR,
+            batch_size=BATCH_SIZE,
+            img_size=IMAGE_SIZE
+        )
     
+    # Combine training generators if both exist
+    if custom_train_gen and kaggle_train_gen:
+        print("Combining custom and Kaggle training data...")
+        train_generator = CombinedGenerator(custom_train_gen, kaggle_train_gen)
+    elif custom_train_gen:
+        train_generator = custom_train_gen
+    elif kaggle_train_gen:
+        train_generator = kaggle_train_gen
+    else:
+        print("No valid training dataset found. Exiting.")
+        return model
+    
+    # Combine validation generators if both exist
+    if custom_val_gen and kaggle_val_gen:
+        print("Combining custom and Kaggle validation data...")
+        val_generator = CombinedGenerator(custom_val_gen, kaggle_val_gen)
+    elif custom_val_gen:
+        val_generator = custom_val_gen
+    elif kaggle_val_gen:
+        val_generator = kaggle_val_gen
+    else:
+        print("No valid validation dataset found. Exiting.")
+        return model
+
+    # Train the model using the combined or single generator
+    history = model.fit(
+        train_generator,
+        epochs=epochs,
+        validation_data=val_generator,
+        callbacks=callbacks,
+        verbose=1
+    )
+
+    # Save final model
+    final_path = os.path.join(MODEL_CHECKPOINT_DIR, "final_patched_lightweight_hybrid.h5")
+    asl_model.save_model(final_path)
+    print(f"Training complete. Final model saved to {final_path}")
+
     return model
 
+
 if __name__ == "__main__":
-    # Parse command-line arguments
     parser = argparse.ArgumentParser(description="Train patched lightweight hybrid ASL recognition model")
     parser.add_argument("--kaggle", action="store_true", help="Train on Kaggle dataset")
     parser.add_argument("--custom", action="store_true", help="Train on custom processed dataset")
     parser.add_argument("--epochs", type=int, default=EPOCHS, help="Number of training epochs")
     parser.add_argument("--no-all-data", action="store_true", help="Don't load all data into memory")
-    parser.add_argument("--sequence-length", type=int, default=1, 
-                        help="Sequence length for RNN (use 1 for single image classification)")
     
     args = parser.parse_args()
     
@@ -175,6 +248,5 @@ if __name__ == "__main__":
         epochs=args.epochs,
         train_kaggle=args.kaggle,
         train_custom=args.custom,
-        load_all_data=not args.no_all_data,
-        sequence_length=args.sequence_length
+        load_all_data=not args.no_all_data
     )

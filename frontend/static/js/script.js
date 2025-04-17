@@ -298,17 +298,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 );
 
-// Function to generate random matrix text
-function generateRandomMatrixText() {
-    const characters = '01ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'; // You can add more characters
-    let randomText = '';
-    for (let i = 0; i < 50; i++) { // Adjust the length of each line for randomness
-        randomText += characters.charAt(Math.floor(Math.random() * characters.length));
-    }
-    return randomText;
-}
 
-// Dynamically add the random text to the background
+
+
 const matrixBackground = document.querySelector('body::before');
 matrixBackground.textContent = generateRandomMatrixText();
 
